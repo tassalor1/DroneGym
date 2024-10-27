@@ -142,7 +142,6 @@ class CVAviary(BaseAviary):
 
     def _computeTerminated(self):
         # Define termination conditions
-        # For example, terminate if the drone crashes or reaches a time limit
         terminated = False
         if self.step_counter / self.CTRL_FREQ > 60:  # 60 seconds episode
             terminated = True
