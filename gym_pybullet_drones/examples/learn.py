@@ -30,6 +30,7 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from gym_pybullet_drones.utils.Logger import Logger
 from gym_pybullet_drones.envs.HoverAviary import HoverAviary
 from gym_pybullet_drones.envs.MultiHoverAviary import MultiHoverAviary
+from gym_pybullet_drones.envs.CvAviary import CVAviary
 from gym_pybullet_drones.utils.utils import sync, str2bool
 from gym_pybullet_drones.utils.enums import ObservationType, ActionType
 
@@ -42,27 +43,33 @@ DEFAULT_OBS = ObservationType('kin') # 'kin' or 'rgb'
 DEFAULT_ACT = ActionType('one_d_rpm') # 'rpm' or 'pid' or 'vel' or 'one_d_rpm' or 'one_d_pid'
 DEFAULT_AGENTS = 2
 DEFAULT_MA = False
-
-def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_GUI, plot=True, colab=DEFAULT_COLAB, record_video=DEFAULT_RECORD_VIDEO, local=True):
+DEFAULT_CV = True
+def run(cvagent=DEFAULT_CV, multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_GUI, plot=True, colab=DEFAULT_COLAB, record_video=DEFAULT_RECORD_VIDEO, local=True):
 
     filename = os.path.join(output_folder, 'save-'+datetime.now().strftime("%m.%d.%Y_%H.%M.%S"))
     if not os.path.exists(filename):
         os.makedirs(filename+'/')
-
-    if not multiagent:
-        train_env = make_vec_env(HoverAviary,
+    if cvagent: 
+        train_env = make_vec_env(env_id=CVAviary,
                                  env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
                                  n_envs=1,
                                  seed=0
                                  )
-        eval_env = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
-    else:
-        train_env = make_vec_env(MultiHoverAviary,
-                                 env_kwargs=dict(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT),
-                                 n_envs=1,
-                                 seed=0
-                                 )
-        eval_env = MultiHoverAviary(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        eval_env = CVAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        if not multiagent:
+            train_env = make_vec_env(env_id=HoverAviary,
+                                    env_kwargs=dict(obs=DEFAULT_OBS, act=DEFAULT_ACT),
+                                    n_envs=1,
+                                    seed=0
+                                    )
+            eval_env = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        else:
+            train_env = make_vec_env(env_id=MultiHoverAviary,
+                                    env_kwargs=dict(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT),
+                                    n_envs=1,
+                                    seed=0
+                                    )
+            eval_env = MultiHoverAviary(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT)
 
     #### Check the environment's spaces ########################
     print('[INFO] Action space:', train_env.action_space)
@@ -120,19 +127,25 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
     model = PPO.load(path)
 
     #### Show (and record a video of) the model's performance ##
-    if not multiagent:
-        test_env = HoverAviary(gui=gui,
+    if cvagent: 
+        test_env = CVAviary(gui=gui,
                                obs=DEFAULT_OBS,
                                act=DEFAULT_ACT,
                                record=record_video)
-        test_env_nogui = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
-    else:
-        test_env = MultiHoverAviary(gui=gui,
-                                        num_drones=DEFAULT_AGENTS,
-                                        obs=DEFAULT_OBS,
-                                        act=DEFAULT_ACT,
-                                        record=record_video)
-        test_env_nogui = MultiHoverAviary(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        test_env_nogui = CVAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        if not multiagent:
+            test_env = HoverAviary(gui=gui,
+                                obs=DEFAULT_OBS,
+                                act=DEFAULT_ACT,
+                                record=record_video)
+            test_env_nogui = HoverAviary(obs=DEFAULT_OBS, act=DEFAULT_ACT)
+        else:
+            test_env = MultiHoverAviary(gui=gui,
+                                            num_drones=DEFAULT_AGENTS,
+                                            obs=DEFAULT_OBS,
+                                            act=DEFAULT_ACT,
+                                            record=record_video)
+            test_env_nogui = MultiHoverAviary(num_drones=DEFAULT_AGENTS, obs=DEFAULT_OBS, act=DEFAULT_ACT)
     logger = Logger(logging_freq_hz=int(test_env.CTRL_FREQ),
                 num_drones=DEFAULT_AGENTS if multiagent else 1,
                 output_folder=output_folder,
@@ -190,6 +203,7 @@ def run(multiagent=DEFAULT_MA, output_folder=DEFAULT_OUTPUT_FOLDER, gui=DEFAULT_
 if __name__ == '__main__':
     #### Define and parse (optional) arguments for the script ##
     parser = argparse.ArgumentParser(description='Single agent reinforcement learning example script')
+    parser.add_argument('--cvagent',            default=DEFAULT_MA,            type=str2bool,      help='Whether to use CV Hover (default: False)', metavar='')
     parser.add_argument('--multiagent',         default=DEFAULT_MA,            type=str2bool,      help='Whether to use example LeaderFollower instead of Hover (default: False)', metavar='')
     parser.add_argument('--gui',                default=DEFAULT_GUI,           type=str2bool,      help='Whether to use PyBullet GUI (default: True)', metavar='')
     parser.add_argument('--record_video',       default=DEFAULT_RECORD_VIDEO,  type=str2bool,      help='Whether to record a video (default: False)', metavar='')
