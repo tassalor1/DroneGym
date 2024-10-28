@@ -3,11 +3,11 @@ import pybullet as p
 import torch
 import cv2
 from gymnasium import spaces
-
+import os
 from gym_pybullet_drones.envs.BaseRLAviary import BaseRLAviary
-from gym_pybullet_drones.utils.enums import DroneModel, Physics
+from gym_pybullet_drones.utils.enums import DroneModel, Physics, ActionType, ObservationType
 
-from midasModel.run import run  
+from gym_pybullet_drones.midasModel.run import run  
 
 class DepthDistance:
     def __init__(self, img, best_bbox=None):
@@ -59,7 +59,7 @@ class DepthDistance:
 
         return median_depth, prediction
 
-class CVAviary(BaseAviary):
+class CVAviary(BaseRLAviary):
     """A custom aviary environment with computer vision capabilities."""
 
     def __init__(self,
@@ -73,10 +73,18 @@ class CVAviary(BaseAviary):
                  ctrl_freq=48,
                  gui=False,
                  record=False,
-                 obstacles=False,
-                 user_debug_gui=True,
-                 output_folder='results'
+                 obs=False,
+                 act: ActionType=ActionType.RPM,
                  ):
+        
+        # camera parameters
+        self.IMG_WIDTH = 640
+        self.IMG_HEIGHT = 480
+        self.IMG_RES = np.array([self.IMG_WIDTH, self.IMG_HEIGHT])
+        self.CAM_FOV = 90
+        self.CAM_NEAR = 0.1
+        self.CAM_FAR = 1000
+
         super().__init__(drone_model=drone_model,
                          num_drones=num_drones,
                          neighbourhood_radius=neighbourhood_radius,
@@ -87,22 +95,13 @@ class CVAviary(BaseAviary):
                          ctrl_freq=ctrl_freq,
                          gui=gui,
                          record=record,
-                         obstacles=obstacles,
-                         user_debug_gui=user_debug_gui,
-                         vision_attributes=True,
-                         output_folder=output_folder
+                         obs=obs,
+                         act=act,
                          )
+        yolov5_path = os.path.join("/Users/connoranthow/dev/p_dev/DroneGym/gym_pybullet_drones", "yolov5")
 
-        # camera parameters
-        self.IMG_WIDTH = 640
-        self.IMG_HEIGHT = 480
-        self.IMG_RES = np.array([self.IMG_WIDTH, self.IMG_HEIGHT])
-        self.CAM_FOV = 90
-        self.CAM_NEAR = 0.1
-        self.CAM_FAR = 1000
-
-        self.yolo_model = torch.hub.load('ultralytics/yolov5', 'custom',
-                                         path='yolov5/weights/best.pt', source='local')
+        self.yolo_model = torch.hub.load(yolov5_path, 'custom',
+                                         path='gym_pybullet_drones/yolov5/weights/best.pt', source='local')
 
         # Determine the camera link index
         self.CAMERA_LINK_INDEX = self._getCameraLinkIndex()

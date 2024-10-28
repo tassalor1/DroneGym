@@ -9,7 +9,7 @@ import torch
 import cv2
 import numpy as np
 from midasModel.midas.model_loader import default_models, load_model
-from cv_processor import CVProcessor
+from gym_pybullet_drones.midasModel.cv_processor import CVProcessor
 
 
 
