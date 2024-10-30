@@ -41,7 +41,7 @@ python3 downwash.py
 
 ```sh
 cd gym_pybullet_drones/examples/
-python learn.py # task: single drone hover at z == 1.0
+PYTHONPATH="/Users/connoranthow/dev/p_dev/DroneGym" python3 learn.py --cvagent True
 python learn.py --multiagent true # task: 2-drone hover at z == 1.2 and 0.7
 ```
 
