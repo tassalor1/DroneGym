@@ -98,9 +98,12 @@ class CVAviary(BaseRLAviary):
                          obs=obs,
                          act=act,
                          )
-        yolov5_path = os.path.join("/Users/connoranthow/dev/p_dev/DroneGym/gym_pybullet_drones", "yolov5")
-        self.yolo_model = torch.hub.load(yolov5_path, 'custom',
-                                         path='gym_pybullet_drones/yolov5/weights/best.pt', source='local')
+
+        self.yolo_model = torch.hub.load(
+            'ultralytics/yolov5',   
+            'custom',                
+            path='gym_pybullet_drones/yolov5/weights/best.pt',        
+        )
 
         # Determine the camera link index
         self.CAMERA_LINK_INDEX = self._getCameraLinkIndex()
